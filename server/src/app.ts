@@ -1,10 +1,14 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import connectDB from './config/database';
 
 dotenv.config();
 
-const app: Application =express();
+// Connect to MongoDB
+connectDB();
+
+const app: Application = express();
 
 // Middleware
 app.use(cors({
