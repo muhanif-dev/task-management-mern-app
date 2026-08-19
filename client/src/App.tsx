@@ -1,9 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { SignupPage } from './pages/SignupPage';
 import { SigninPage } from './pages/SigninPage';
-
-// Placeholder for tasks page until Phase 12
-const TasksPage = () => <div className="p-8 text-center text-xl font-bold">Tasks Dashboard Placeholder</div>;
+import { TasksPage } from './pages/TasksPage';
 
 export function App() {
   return (
