@@ -1,6 +1,5 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { TaskService } from '../services/task.service';
-
 export class TaskController {
   static async createTask(req: Request, res: Response): Promise<void> {
     try {
@@ -27,15 +26,20 @@ export class TaskController {
     }
   }
 
-  static async getTasks(req: Request, res: Response): Promise<void> {
+ static async getTasks(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.userId!;
-      const result = await TaskService.getTasks(userId);
+      const page = parseInt(req.query.page as string, 10);
+      const limit = parseInt(req.query.limit as string, 10);
+      const search = req.query.search as string;
+
+      const result = await TaskService.getTasks(userId, { page, limit, search });
 
       res.status(result.status).json({
         success: true,
         message: result.message,
         data: result.data,
+        pagination: result.pagination,
       });
     } catch (error) {
       console.error('Get tasks error:', error);
@@ -112,3 +116,5 @@ export class TaskController {
     }
   }
 }
+
+

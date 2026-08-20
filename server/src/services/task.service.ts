@@ -29,14 +29,42 @@ export class TaskService {
     };
   }
 
-  static async getTasks(userId: string): Promise<{ success: boolean; status: number; message: string; data?: any }> {
-    const tasks = await Task.find({ userId }).sort({ createdAt: -1 });
+static async getTasks(
+    userId: string,
+    queryObj: { page?: number; limit?: number; search?: string }
+  ): Promise<{ success: boolean; status: number; message: string; data?: any; pagination?: any }> {
+    const page = queryObj.page && queryObj.page > 0 ? queryObj.page : 1;
+    const limit = queryObj.limit && queryObj.limit > 0 ? queryObj.limit : 5;
+    const search = queryObj.search ? queryObj.search.trim() : '';
+
+    const query: any = { userId };
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [tasks, totalTasks] = await Promise.all([
+      Task.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Task.countDocuments(query),
+    ]);
+
+    const totalPages = Math.ceil(totalTasks / limit) || 1;
 
     return {
       success: true,
       status: 200,
       message: 'Tasks retrieved successfully',
       data: tasks,
+      pagination: {
+        totalTasks,
+        totalPages,
+        currentPage: page,
+        limit,
+      },
     };
   }
 

@@ -20,6 +20,13 @@ export const TasksPage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  
+  // Search & Pagination States
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 5;
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -32,14 +39,18 @@ export const TasksPage: React.FC = () => {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-    fetchTasks();
   }, []);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [page, search]);
 
   const fetchTasks = async () => {
     try {
-      const response = await API.get('/tasks');
+      const response = await API.get(`/tasks?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
       if (response.data.success) {
         setTasks(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
       }
     } catch (err: any) {
       if (err.response?.status === 401) {
@@ -60,6 +71,7 @@ export const TasksPage: React.FC = () => {
       if (response.data.success) {
         setTitle('');
         setDescription('');
+        setPage(1); // Jump to first page to see the new task
         fetchTasks();
       }
     } catch (err: any) {
@@ -104,7 +116,7 @@ export const TasksPage: React.FC = () => {
     try {
       const response = await API.delete(`/tasks/${id}`);
       if (response.data.success) {
-        setTasks(tasks.filter((t) => t._id !== id));
+        fetchTasks(); // Refetch to correctly handle pagination offsets after deletion
       }
     } catch (err: any) {
       setError('Failed to delete task');
@@ -127,7 +139,7 @@ export const TasksPage: React.FC = () => {
             <span className="text-gray-700 font-medium">{user?.name || 'User'}</span>
             <button
               onClick={handleLogout}
-              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-750"
+              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
             >
               Logout
             </button>
@@ -174,11 +186,27 @@ export const TasksPage: React.FC = () => {
           </form>
         </div>
 
-        {/* Task List */}
+        {/* Task List Section */}
         <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Your Tasks</h2>
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <h2 className="text-lg font-medium text-gray-900">Your Tasks</h2>
+            {/* Search Bar */}
+            <div className="w-full sm:w-72">
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1); // Reset to page 1 on search
+                }}
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
           {tasks.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">No tasks found. Create one above!</p>
+            <p className="text-gray-500 text-center py-4">No tasks found.</p>
           ) : (
             <div className="space-y-4">
               {tasks.map((task) => (
@@ -257,6 +285,29 @@ export const TasksPage: React.FC = () => {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                disabled={page === 1}
+                className="px-4 py-2 border rounded-md text-sm font-medium bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-600">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={page === totalPages}
+                className="px-4 py-2 border rounded-md text-sm font-medium bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>
