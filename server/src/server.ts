@@ -1,11 +1,15 @@
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import {connectDB} from "./db";
-import taskRoutes from "./routes/task.routes";// Replace with your actual routes path
+import taskRoutes from "./routes/task.routes";
+import authRoutes from "./routes/auth.routes";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  credentials: true,
+}));
 app.use(express.json());
 
 // 1. GLOBAL MIDDLEWARE: Runs before every API request
@@ -24,6 +28,7 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // 2. Mount your application routes
+app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 
 app.get("/", (req, res) => {
